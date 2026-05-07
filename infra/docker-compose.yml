@@ -1,16 +1,16 @@
 services:
   postgres:
     image: postgres:16
-    container_name: riskapp-postgres
+    container_name: ppm-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: riskapp
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: ppm
+      POSTGRES_USER: ppm_user
+      POSTGRES_PASSWORD: ppm_pass123
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - riskapp_postgres_data:/var/lib/postgresql/data
+      - ppm_postgres_data:/var/lib/postgresql/data
 
 volumes:
-  riskapp_postgres_data:
+  ppm_postgres_data:

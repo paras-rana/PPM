@@ -43,7 +43,8 @@ npm run dev
 ## Default Local Addresses
 
 - Frontend: `http://localhost:5174`
-- API: `http://localhost:3000`
+- API: `http://localhost:3001`
+- Database: `localhost:5433` (`ppm`)
 - Login: `http://localhost:5174/login`
 
 ## Optional ERM Integration
