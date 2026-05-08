@@ -3,6 +3,7 @@ import {
   cloneElement,
   isValidElement,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -28,6 +29,8 @@ function applySectionBands(node, state) {
     return node;
   }
 
+  // We preserve the original element tree and only inject alternating band classes
+  // into known section containers.
   const nextProps = {};
   const className = typeof node.props.className === 'string' ? node.props.className : '';
 
@@ -65,8 +68,11 @@ export default function AppFrame({
   } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const bandState = { index: 1 };
-  const bandedChildren = Children.map(children, (child) => applySectionBands(child, bandState));
+  const bandedChildren = useMemo(() => {
+    // The recursive banding pass only depends on the rendered content tree.
+    const bandState = { index: 1 };
+    return Children.map(children, (child) => applySectionBands(child, bandState));
+  }, [children]);
 
   useEffect(() => {
     if (!menuOpen) return undefined;

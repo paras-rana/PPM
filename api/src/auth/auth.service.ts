@@ -8,7 +8,13 @@ import {
   OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { Prisma } from '@prisma/client';
+import {
+  createHmac,
+  randomBytes,
+  scryptSync,
+  timingSafeEqual,
+} from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DEFAULT_ROLE_KEYS,
@@ -112,7 +118,9 @@ export class AuthService implements OnModuleInit {
   private readonly logger = new Logger(AuthService.name);
   private readonly tokenSecret =
     process.env.AUTH_TOKEN_SECRET ?? 'riskapp-local-auth-secret-change-me';
-  private readonly tokenTtlSeconds = Number(process.env.AUTH_TOKEN_TTL_SECONDS ?? 60 * 60 * 12);
+  private readonly tokenTtlSeconds = Number(
+    process.env.AUTH_TOKEN_TTL_SECONDS ?? 60 * 60 * 12,
+  );
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -139,17 +147,15 @@ export class AuthService implements OnModuleInit {
     `;
 
     const user = rows[0];
-    if (!user || !user.is_active || !this.verifyPassword(password, user.password_hash)) {
+    if (
+      !user ||
+      !user.is_active ||
+      !this.verifyPassword(password, user.password_hash)
+    ) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const authUser: AuthUser = {
-      userId: user.user_id,
-      email: user.email,
-      role: this.normalizeRole(user.role),
-      permissions: await this.getPermissionsForRole(user.role),
-      name: user.full_name,
-    };
+    const authUser = await this.buildAuthUser(user);
 
     return this.createLoginResult(authUser);
   }
@@ -165,7 +171,9 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('Invalid token signature');
     }
 
-    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+    if (
+      !timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))
+    ) {
       throw new UnauthorizedException('Invalid token signature');
     }
 
@@ -212,13 +220,7 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException('User not found');
     }
 
-    return {
-      userId: user.user_id,
-      email: user.email,
-      role: this.normalizeRole(user.role),
-      permissions: await this.getPermissionsForRole(user.role),
-      name: user.full_name,
-    };
+    return this.buildAuthUser(user);
   }
 
   async listUsers(): Promise<UserSummary[]> {
@@ -234,7 +236,7 @@ export class AuthService implements OnModuleInit {
       ORDER BY LOWER(full_name) ASC NULLS LAST, LOWER(email) ASC
     `;
 
-    return Promise.all(rows.map((row) => this.mapUserSummary(row)));
+    return this.mapUserSummaries(rows);
   }
 
   async createUser(input: CreateUserInput): Promise<UserSummary> {
@@ -286,28 +288,37 @@ export class AuthService implements OnModuleInit {
     return this.mapUserSummary(createdUser);
   }
 
-  async updateUser(userId: string, input: UpdateUserInput): Promise<UserSummary> {
+  async updateUser(
+    userId: string,
+    input: UpdateUserInput,
+  ): Promise<UserSummary> {
     const existingUser = await this.findUserRowById(userId);
-    const normalizedEmail = input.email === undefined
-      ? existingUser.email
-      : this.normalizeEmail(input.email);
-    const normalizedName = input.name === undefined
-      ? existingUser.full_name
-      : this.normalizeName(input.name);
-    const normalizedRole = input.role === undefined
-      ? this.normalizeRole(existingUser.role)
-      : await this.normalizeExistingRole(input.role);
-    const passwordHash = input.password === undefined || input.password === null || input.password === ''
-      ? existingUser.password_hash
-      : this.hashPassword(input.password);
+    const normalizedEmail =
+      input.email === undefined
+        ? existingUser.email
+        : this.normalizeEmail(input.email);
+    const normalizedName =
+      input.name === undefined
+        ? existingUser.full_name
+        : this.normalizeName(input.name);
+    const normalizedRole =
+      input.role === undefined
+        ? this.normalizeRole(existingUser.role)
+        : await this.normalizeExistingRole(input.role);
+    const passwordHash =
+      input.password === undefined ||
+      input.password === null ||
+      input.password === ''
+        ? existingUser.password_hash
+        : this.hashPassword(input.password);
 
     if (normalizedEmail !== existingUser.email) {
       await this.assertEmailAvailable(normalizedEmail, userId);
     }
 
     if (
-      this.normalizeRole(existingUser.role) === 'ADMIN'
-      && normalizedRole !== 'ADMIN'
+      this.normalizeRole(existingUser.role) === 'ADMIN' &&
+      normalizedRole !== 'ADMIN'
     ) {
       const adminRows = await this.prisma.$queryRaw<{ count: number }[]>`
         SELECT COUNT(*)::int AS count
@@ -430,14 +441,19 @@ export class AuthService implements OnModuleInit {
     return this.mapRoleSummary(createdRole);
   }
 
-  async updateRole(roleKey: string, input: UpdateRoleInput): Promise<RoleSummary> {
+  async updateRole(
+    roleKey: string,
+    input: UpdateRoleInput,
+  ): Promise<RoleSummary> {
     const existingRole = await this.findRoleRow(roleKey);
-    const displayName = input.displayName === undefined
-      ? existingRole.display_name
-      : this.normalizeRoleDisplayName(input.displayName);
-    const permissions = input.permissions === undefined
-      ? this.normalizePermissions(existingRole.permissions)
-      : this.normalizePermissions(input.permissions);
+    const displayName =
+      input.displayName === undefined
+        ? existingRole.display_name
+        : this.normalizeRoleDisplayName(input.displayName);
+    const permissions =
+      input.permissions === undefined
+        ? this.normalizePermissions(existingRole.permissions)
+        : this.normalizePermissions(input.permissions);
 
     const updatedRows = await this.prisma.$queryRaw<RoleRow[]>`
       UPDATE app_roles
@@ -463,7 +479,9 @@ export class AuthService implements OnModuleInit {
   private createLoginResult(user: AuthUser): LoginResult {
     const exp = Math.floor(Date.now() / 1000) + this.tokenTtlSeconds;
     const payload: TokenPayload = { ...user, exp };
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
     const signature = this.sign(encodedPayload);
 
     return {
@@ -474,7 +492,9 @@ export class AuthService implements OnModuleInit {
   }
 
   private sign(value: string): string {
-    return createHmac('sha256', this.tokenSecret).update(value).digest('base64url');
+    return createHmac('sha256', this.tokenSecret)
+      .update(value)
+      .digest('base64url');
   }
 
   private hashPassword(password: string): string {
@@ -517,7 +537,9 @@ export class AuthService implements OnModuleInit {
   }
 
   private normalizeEmail(email: string): string {
-    const normalizedEmail = String(email ?? '').trim().toLowerCase();
+    const normalizedEmail = String(email ?? '')
+      .trim()
+      .toLowerCase();
     if (!normalizedEmail) {
       throw new BadRequestException('Email is required');
     }
@@ -530,6 +552,16 @@ export class AuthService implements OnModuleInit {
     return normalizedName || null;
   }
 
+  private async buildAuthUser(row: UserRow): Promise<AuthUser> {
+    return {
+      userId: row.user_id,
+      email: row.email,
+      role: this.normalizeRole(row.role),
+      permissions: await this.getPermissionsForRole(row.role),
+      name: row.full_name,
+    };
+  }
+
   private async mapUserSummary(row: UserRow): Promise<UserSummary> {
     return {
       userId: row.user_id,
@@ -539,6 +571,25 @@ export class AuthService implements OnModuleInit {
       name: row.full_name,
       isActive: row.is_active,
     };
+  }
+
+  private async mapUserSummaries(rows: UserRow[]): Promise<UserSummary[]> {
+    const permissionsByRole = await this.getPermissionsByRole(
+      rows.map((row) => row.role),
+    );
+
+    return rows.map((row) => {
+      const normalizedRole = this.normalizeRole(row.role);
+
+      return {
+        userId: row.user_id,
+        email: row.email,
+        role: normalizedRole,
+        permissions: permissionsByRole.get(normalizedRole) ?? [],
+        name: row.full_name,
+        isActive: row.is_active,
+      };
+    });
   }
 
   private mapRoleSummary(row: RoleRow): RoleSummary {
@@ -564,7 +615,10 @@ export class AuthService implements OnModuleInit {
     return rows[0]?.user_id ?? `U-${Date.now()}`;
   }
 
-  private async assertEmailAvailable(email: string, excludeUserId?: string): Promise<void> {
+  private async assertEmailAvailable(
+    email: string,
+    excludeUserId?: string,
+  ): Promise<void> {
     const existingRows = excludeUserId
       ? await this.prisma.$queryRaw<{ user_id: string }[]>`
           SELECT user_id
@@ -608,7 +662,10 @@ export class AuthService implements OnModuleInit {
   }
 
   private normalizeRoleKey(role: string): string {
-    const normalizedRole = String(role ?? '').trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+    const normalizedRole = String(role ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_]/g, '_');
     if (!normalizedRole) {
       throw new BadRequestException('Role is required');
     }
@@ -630,6 +687,8 @@ export class AuthService implements OnModuleInit {
       return [];
     }
 
+    // Legacy role seeds used coarse capability names. Expand them here so both
+    // old and new records resolve to the same canonical permission set.
     return Array.from(
       new Set(
         permissions.flatMap((permission) => {
@@ -653,6 +712,37 @@ export class AuthService implements OnModuleInit {
   private async getPermissionsForRole(role: string): Promise<PermissionKey[]> {
     const roleRow = await this.findRoleRow(role);
     return this.normalizePermissions(roleRow.permissions);
+  }
+
+  private async getPermissionsByRole(
+    roleKeys: string[],
+  ): Promise<Map<string, PermissionKey[]>> {
+    const normalizedRoleKeys = Array.from(
+      new Set(roleKeys.map((roleKey) => this.normalizeRoleKey(roleKey))),
+    );
+
+    if (normalizedRoleKeys.length === 0) {
+      return new Map();
+    }
+
+    const rows = await this.prisma.$queryRaw<RoleRow[]>`
+      SELECT
+        role_key,
+        display_name,
+        permissions,
+        is_system
+      FROM app_roles
+      WHERE role_key IN (${Prisma.join(normalizedRoleKeys)})
+    `;
+
+    // listUsers() can return many rows for the same role, so resolve each role once
+    // and reuse that permission list across the whole response.
+    return new Map(
+      rows.map((row) => [
+        this.normalizeRole(row.role_key),
+        this.normalizePermissions(row.permissions),
+      ]),
+    );
   }
 
   private async findRoleRow(roleKey: string): Promise<RoleRow> {
@@ -773,6 +863,7 @@ export class AuthService implements OnModuleInit {
     isSystem: boolean;
   }): Promise<void> {
     const normalizedRoleKey = this.normalizeRoleKey(roleKey);
+    const normalizedPermissions = this.normalizePermissions(permissions);
     const rows = await this.prisma.$queryRaw<{ role_key: string }[]>`
       SELECT role_key
       FROM app_roles
@@ -785,7 +876,7 @@ export class AuthService implements OnModuleInit {
         UPDATE app_roles
         SET
           display_name = ${displayName},
-          permissions = CAST(${JSON.stringify(this.normalizePermissions(permissions))} AS JSONB),
+          permissions = CAST(${JSON.stringify(normalizedPermissions)} AS JSONB),
           is_system = ${isSystem},
           updated_at = NOW()
         WHERE role_key = ${normalizedRoleKey}
@@ -803,7 +894,7 @@ export class AuthService implements OnModuleInit {
       VALUES (
         ${normalizedRoleKey},
         ${displayName},
-        CAST(${JSON.stringify(this.normalizePermissions(permissions))} AS JSONB),
+        CAST(${JSON.stringify(normalizedPermissions)} AS JSONB),
         ${isSystem}
       )
     `;
@@ -886,10 +977,8 @@ export class AuthService implements OnModuleInit {
       )
     `;
 
-    this.logger.log(`Seeded default ${role.toLowerCase()} user: ${normalizedEmail}`);
+    this.logger.log(
+      `Seeded default ${role.toLowerCase()} user: ${normalizedEmail}`,
+    );
   }
 }
-
-
-
-

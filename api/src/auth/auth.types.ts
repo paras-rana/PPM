@@ -1,4 +1,8 @@
-export const DEFAULT_ROLE_KEYS = ['ADMIN', 'EXECUTIVE', 'BUSINESS_OWNER'] as const;
+export const DEFAULT_ROLE_KEYS = [
+  'ADMIN',
+  'EXECUTIVE',
+  'BUSINESS_OWNER',
+] as const;
 
 export const PERMISSION_KEYS = [
   'view_portfolio_dashboard_all',

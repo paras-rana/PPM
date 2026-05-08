@@ -16,7 +16,7 @@ PPM/
 1. Start Postgres:
 
 ```powershell
-cd infra
+cd infra\ppm
 docker compose up -d
 ```
 

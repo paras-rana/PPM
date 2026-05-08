@@ -24,14 +24,13 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    const requiredRoles = this.reflector.getAllAndOverride<AuthRole[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    const requiredPermissions = this.reflector.getAllAndOverride<PermissionKey[]>(PERMISSIONS_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<AuthRole[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    const requiredPermissions = this.reflector.getAllAndOverride<
+      PermissionKey[]
+    >(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
     if (isPublic) {
       return true;
@@ -55,8 +54,10 @@ export class AuthGuard implements CanActivate {
     }
 
     if (
-      requiredPermissions?.length
-      && !requiredPermissions.every((permission) => request.user?.permissions.includes(permission))
+      requiredPermissions?.length &&
+      !requiredPermissions.every((permission) =>
+        request.user?.permissions.includes(permission),
+      )
     ) {
       throw new ForbiddenException('Insufficient permission');
     }

@@ -200,18 +200,22 @@ export function normalizePermissions(permissions) {
   );
 }
 
+function getPermissionSet(permissions) {
+  return new Set(normalizePermissions(permissions));
+}
+
 export function hasPermission(permissions, requiredPermission) {
-  return normalizePermissions(permissions).includes(requiredPermission);
+  return getPermissionSet(permissions).has(requiredPermission);
 }
 
 export function hasAllPermissions(permissions, requiredPermissions = []) {
-  const normalizedPermissions = normalizePermissions(permissions);
-  return requiredPermissions.every((permission) => normalizedPermissions.includes(permission));
+  const permissionSet = getPermissionSet(permissions);
+  return requiredPermissions.every((permission) => permissionSet.has(permission));
 }
 
 export function hasAnyPermission(permissions, requiredPermissions = []) {
-  const normalizedPermissions = normalizePermissions(permissions);
-  return requiredPermissions.some((permission) => normalizedPermissions.includes(permission));
+  const permissionSet = getPermissionSet(permissions);
+  return requiredPermissions.some((permission) => permissionSet.has(permission));
 }
 
 export function canViewPortfolioDashboard(permissions) {

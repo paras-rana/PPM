@@ -3,7 +3,9 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const allowedOrigins = (process.env.FRONTEND_ORIGINS ?? 'http://localhost:5174')
+  const allowedOrigins = (
+    process.env.FRONTEND_ORIGINS ?? 'http://localhost:5174'
+  )
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);

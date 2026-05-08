@@ -57,6 +57,10 @@ function normalizeSession(session) {
   };
 }
 
+function persistSession(session) {
+  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => normalizeSession(readStoredSession()));
   const [authReady, setAuthReady] = useState(false);
@@ -68,6 +72,7 @@ export function AuthProvider({ children }) {
       const stored = normalizeSession(readStoredSession());
       const activeWorkspace = readActiveWorkspace();
 
+      // The auth payload is workspace-specific, so clear it if another app owns the session.
       if (activeWorkspace && activeWorkspace !== APP_WORKSPACE) {
         window.localStorage.removeItem(AUTH_STORAGE_KEY);
         setSession(null);
@@ -98,7 +103,7 @@ export function AuthProvider({ children }) {
           user: data.user,
         });
 
-        window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
+        persistSession(nextSession);
         setSession(nextSession);
       } catch {
         window.localStorage.removeItem(AUTH_STORAGE_KEY);
@@ -132,7 +137,7 @@ export function AuthProvider({ children }) {
       workspace: APP_WORKSPACE,
     });
 
-    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
+    persistSession(nextSession);
     window.localStorage.setItem(ACTIVE_WORKSPACE_STORAGE_KEY, APP_WORKSPACE);
     setSession(nextSession);
     return nextSession;
@@ -148,7 +153,7 @@ export function AuthProvider({ children }) {
         ...currentSession,
         workspace,
       };
-      window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession));
+      persistSession(nextSession);
       return nextSession;
     });
   }

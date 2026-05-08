@@ -18,7 +18,13 @@ const MITIGATION_STATUSES = [
 
 const ASSESSMENT_TYPES = ['INHERENT', 'RESIDUAL'] as const;
 
-const RISK_STATUSES = ['Open', 'Monitoring', 'Mitigating', 'Accepted', 'Closed'] as const;
+const RISK_STATUSES = [
+  'Open',
+  'Monitoring',
+  'Mitigating',
+  'Accepted',
+  'Closed',
+] as const;
 
 const DEFAULT_DEPARTMENT_BY_CATEGORY: Record<string, string> = {
   Clinical: 'Clinical Operations',
@@ -93,7 +99,8 @@ const SEEDED_PROJECT_RISKS: CreateRiskInput[] = [
     inherent_probability: 4,
     residual_severity: 3,
     residual_probability: 3,
-    residual_notes: 'Data validation checks are being added before broader rollout.',
+    residual_notes:
+      'Data validation checks are being added before broader rollout.',
     next_review_due: '2026-04-15',
   },
   {
@@ -125,7 +132,8 @@ const SEEDED_PROJECT_RISKS: CreateRiskInput[] = [
     inherent_probability: 3,
     residual_severity: 3,
     residual_probability: 2,
-    residual_notes: 'Exception thresholds and human review gates are being tuned.',
+    residual_notes:
+      'Exception thresholds and human review gates are being tuned.',
     next_review_due: '2026-04-12',
   },
   {
@@ -157,7 +165,8 @@ const SEEDED_PROJECT_RISKS: CreateRiskInput[] = [
     inherent_probability: 3,
     residual_severity: 3,
     residual_probability: 2,
-    residual_notes: 'Model review artifacts are being requested from the vendor.',
+    residual_notes:
+      'Model review artifacts are being requested from the vendor.',
     next_review_due: '2026-04-26',
   },
   {
@@ -173,7 +182,8 @@ const SEEDED_PROJECT_RISKS: CreateRiskInput[] = [
     inherent_probability: 4,
     residual_severity: 3,
     residual_probability: 3,
-    residual_notes: 'Data normalization requirements are being defined in discovery.',
+    residual_notes:
+      'Data normalization requirements are being defined in discovery.',
     next_review_due: '2026-04-11',
   },
   {
@@ -189,7 +199,8 @@ const SEEDED_PROJECT_RISKS: CreateRiskInput[] = [
     inherent_probability: 3,
     residual_severity: 3,
     residual_probability: 2,
-    residual_notes: 'Escalation workflows are being designed with operations leaders.',
+    residual_notes:
+      'Escalation workflows are being designed with operations leaders.',
     next_review_due: '2026-04-18',
   },
   {
@@ -205,7 +216,8 @@ const SEEDED_PROJECT_RISKS: CreateRiskInput[] = [
     inherent_probability: 4,
     residual_severity: 4,
     residual_probability: 2,
-    residual_notes: 'Wave planning and executive checkpoints have been established.',
+    residual_notes:
+      'Wave planning and executive checkpoints have been established.',
     next_review_due: '2026-04-09',
   },
   {
@@ -237,7 +249,8 @@ const SEEDED_PROJECT_RISKS: CreateRiskInput[] = [
     inherent_probability: 3,
     residual_severity: 2,
     residual_probability: 2,
-    residual_notes: 'Evidence standards are being documented before rollout accelerates.',
+    residual_notes:
+      'Evidence standards are being documented before rollout accelerates.',
     next_review_due: '2026-04-23',
   },
 ];
@@ -536,7 +549,7 @@ export class RisksService implements OnModuleInit {
     riskId: string,
     input: CreateMitigationInput,
   ): Promise<MitigationRow> {
-    await this.findOne(riskId); // ensures risk exists
+    await this.assertRiskExists(riskId);
 
     const title = input.title?.trim();
     if (!title) {
@@ -544,7 +557,11 @@ export class RisksService implements OnModuleInit {
     }
 
     const status = input.status?.trim() || 'Planned';
-    if (!MITIGATION_STATUSES.includes(status as (typeof MITIGATION_STATUSES)[number])) {
+    if (
+      !MITIGATION_STATUSES.includes(
+        status as (typeof MITIGATION_STATUSES)[number],
+      )
+    ) {
       throw new BadRequestException(
         `Mitigation status must be one of: ${MITIGATION_STATUSES.join(', ')}`,
       );
@@ -670,7 +687,7 @@ export class RisksService implements OnModuleInit {
     mitigationId: string,
     input: UpdateMitigationInput,
   ): Promise<MitigationRow> {
-    await this.findOne(riskId);
+    await this.assertRiskExists(riskId);
 
     const existingRows = await this.prisma.$queryRaw<MitigationRow[]>`
       SELECT
@@ -708,8 +725,13 @@ export class RisksService implements OnModuleInit {
       throw new BadRequestException('Mitigation title is required');
     }
 
-    const status = input.status === undefined ? existing.status : (input.status.trim() || '');
-    if (!MITIGATION_STATUSES.includes(status as (typeof MITIGATION_STATUSES)[number])) {
+    const status =
+      input.status === undefined ? existing.status : input.status.trim() || '';
+    if (
+      !MITIGATION_STATUSES.includes(
+        status as (typeof MITIGATION_STATUSES)[number],
+      )
+    ) {
       throw new BadRequestException(
         `Mitigation status must be one of: ${MITIGATION_STATUSES.join(', ')}`,
       );
@@ -718,19 +740,21 @@ export class RisksService implements OnModuleInit {
     const mitigationOwnerName =
       input.mitigation_owner_name === undefined
         ? existing.mitigation_owner_name
-        : (input.mitigation_owner_name.trim() || null);
+        : input.mitigation_owner_name.trim() || null;
     const confidenceLevel =
       input.confidence_level === undefined
         ? existing.confidence_level
-        : (input.confidence_level.trim() || null);
+        : input.confidence_level.trim() || null;
     const controlType =
       input.control_type === undefined
         ? existing.control_type
-        : (input.control_type.trim() || null);
+        : input.control_type.trim() || null;
     const planUrl =
-      input.plan_url === undefined ? existing.plan_url : (input.plan_url.trim() || null);
+      input.plan_url === undefined
+        ? existing.plan_url
+        : input.plan_url.trim() || null;
     const notes =
-      input.notes === undefined ? existing.notes : (input.notes.trim() || null);
+      input.notes === undefined ? existing.notes : input.notes.trim() || null;
 
     const startDate =
       input.start_date === undefined
@@ -825,10 +849,14 @@ export class RisksService implements OnModuleInit {
     riskId: string,
     input: CreateAssessmentInput,
   ): Promise<AssessmentRow> {
-    await this.findOne(riskId); // ensures risk exists
+    await this.assertRiskExists(riskId);
 
     const assessmentType = input.assessment_type?.trim() || 'RESIDUAL';
-    if (!ASSESSMENT_TYPES.includes(assessmentType as (typeof ASSESSMENT_TYPES)[number])) {
+    if (
+      !ASSESSMENT_TYPES.includes(
+        assessmentType as (typeof ASSESSMENT_TYPES)[number],
+      )
+    ) {
       throw new BadRequestException(
         `Assessment type must be one of: ${ASSESSMENT_TYPES.join(', ')}`,
       );
@@ -917,7 +945,7 @@ export class RisksService implements OnModuleInit {
     assessmentId: string,
     input: UpdateAssessmentInput,
   ): Promise<AssessmentRow> {
-    await this.findOne(riskId);
+    await this.assertRiskExists(riskId);
 
     const existingRows = await this.prisma.$queryRaw<AssessmentRow[]>`
       SELECT
@@ -946,8 +974,12 @@ export class RisksService implements OnModuleInit {
     const assessmentType =
       input.assessment_type === undefined
         ? existing.assessment_type
-        : (input.assessment_type.trim() || '');
-    if (!ASSESSMENT_TYPES.includes(assessmentType as (typeof ASSESSMENT_TYPES)[number])) {
+        : input.assessment_type.trim() || '';
+    if (
+      !ASSESSMENT_TYPES.includes(
+        assessmentType as (typeof ASSESSMENT_TYPES)[number],
+      )
+    ) {
       throw new BadRequestException(
         `Assessment type must be one of: ${ASSESSMENT_TYPES.join(', ')}`,
       );
@@ -975,9 +1007,9 @@ export class RisksService implements OnModuleInit {
     const assessedBy =
       input.assessed_by === undefined
         ? existing.assessed_by
-        : (input.assessed_by.trim() || 'Risk Owner');
+        : input.assessed_by.trim() || 'Risk Owner';
     const notes =
-      input.notes === undefined ? existing.notes : (input.notes.trim() || null);
+      input.notes === undefined ? existing.notes : input.notes.trim() || null;
 
     return this.prisma.$transaction(async (tx): Promise<AssessmentRow> => {
       const sqlTx = tx as TransactionSqlClient;
@@ -1103,7 +1135,8 @@ export class RisksService implements OnModuleInit {
     }
 
     const resolvedDepartment =
-      department ?? (category ? DEFAULT_DEPARTMENT_BY_CATEGORY[category] ?? null : null);
+      department ??
+      (category ? (DEFAULT_DEPARTMENT_BY_CATEGORY[category] ?? null) : null);
 
     const nextReviewDue =
       input.next_review_due && input.next_review_due.trim() !== ''
@@ -1243,6 +1276,17 @@ export class RisksService implements OnModuleInit {
       await this.createRisk(risk);
     }
   }
+
+  private async assertRiskExists(riskId: string): Promise<void> {
+    const rows = await this.prisma.$queryRaw<{ risk_id: string }[]>`
+      SELECT risk_id
+      FROM risks
+      WHERE risk_id = ${riskId}
+      LIMIT 1
+    `;
+
+    if (!rows[0]?.risk_id) {
+      throw new NotFoundException(`Risk ${riskId} not found`);
+    }
+  }
 }
-
-

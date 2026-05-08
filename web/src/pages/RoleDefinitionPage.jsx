@@ -68,6 +68,8 @@ export default function RoleDefinitionPage() {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    let ignore = false;
+
     async function loadRoles() {
       try {
         setLoading(true);
@@ -83,23 +85,31 @@ export default function RoleDefinitionPage() {
         }
 
         const nextRoles = data.roles ?? [];
-        setRoles(nextRoles);
-        if (!selectedRoleKey && nextRoles[0]?.roleKey) {
-          setSelectedRoleKey(nextRoles[0].roleKey);
-          setEditForm({
-            displayName: nextRoles[0].displayName ?? '',
-            permissions: normalizePermissions(nextRoles[0].permissions),
-          });
+        if (ignore) {
+          return;
         }
+
+        // Selecting a role should stay local to the page; the full role list only
+        // needs to be fetched when auth context changes.
+        setRoles(nextRoles);
+        setSelectedRoleKey((currentRoleKey) => currentRoleKey || nextRoles[0]?.roleKey || '');
       } catch (loadError) {
-        setError(`Failed to load roles: ${getErrorMessage(loadError)}`);
+        if (!ignore) {
+          setError(`Failed to load roles: ${getErrorMessage(loadError)}`);
+        }
       } finally {
-        setLoading(false);
+        if (!ignore) {
+          setLoading(false);
+        }
       }
     }
 
     void loadRoles();
-  }, [token, logout, selectedRoleKey]);
+
+    return () => {
+      ignore = true;
+    };
+  }, [token, logout]);
 
   const selectedRole = useMemo(
     () => roles.find((role) => role.roleKey === selectedRoleKey) ?? null,
