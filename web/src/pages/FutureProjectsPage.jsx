@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useAuth } from '../auth/useAuth';
+import { canViewProject } from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import { usePpmProjects } from '../ppm/PpmProjectsContext';
@@ -12,8 +14,15 @@ function getFutureTone(status) {
 
 export default function FutureProjectsPage() {
   const { futureProjects, archivedProposals, updateFutureStatus } = usePpmProjects();
+  const { canReviewProposals, permissions, user } = useAuth();
   const [notes, setNotes] = useState({});
   const [currentClassifications, setCurrentClassifications] = useState({});
+  const visibleFutureProjects = canReviewProposals
+    ? futureProjects
+    : futureProjects.filter((project) => canViewProject(permissions, user, project));
+  const visibleArchivedProposals = canReviewProposals
+    ? archivedProposals
+    : archivedProposals.filter((project) => canViewProject(permissions, user, project));
 
   function getNotes(projectId) {
     return notes[projectId] ?? '';
@@ -39,11 +48,11 @@ export default function FutureProjectsPage() {
       <section className="panel">
         <div className="panel-header-row">
           <h2><Icon name="portfolio" />Future Pipeline</h2>
-          <div className="muted">{futureProjects.length} future project(s)</div>
+          <div className="muted">{visibleFutureProjects.length} future project(s)</div>
         </div>
 
         <div className="ppm-card-list">
-          {futureProjects.map((project) => (
+          {visibleFutureProjects.map((project) => (
             <article key={project.id} className="detail-block ppm-project-card">
               <div className="panel-header-row">
                 <div>
@@ -63,60 +72,69 @@ export default function FutureProjectsPage() {
               </p>
               <p className="risk-description">{project.summary}</p>
 
-              <label className="filter-item">
-                Review Notes
-                <textarea
-                  rows={3}
-                  value={getNotes(project.id) || project.reviewNotes}
-                  onChange={(event) => setProjectNotes(project.id, event.target.value)}
-                />
-              </label>
+              {canReviewProposals ? (
+                <>
+                  <label className="filter-item">
+                    Review Notes
+                    <textarea
+                      rows={3}
+                      value={getNotes(project.id) || project.reviewNotes}
+                      onChange={(event) => setProjectNotes(project.id, event.target.value)}
+                    />
+                  </label>
 
-              <label className="filter-item">
-                Current Project Classification
-                <select
-                  value={getCurrentClassification(project)}
-                  onChange={(event) => setCurrentClassification(project.id, event.target.value)}
-                >
-                  <option value="">Select classification</option>
-                  {CURRENT_PROJECT_CLASSIFICATION_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </label>
+                  <label className="filter-item">
+                    Current Project Classification
+                    <select
+                      value={getCurrentClassification(project)}
+                      onChange={(event) => setCurrentClassification(project.id, event.target.value)}
+                    >
+                      <option value="">Select classification</option>
+                      {CURRENT_PROJECT_CLASSIFICATION_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </label>
 
-              <div className="detail-actions-row">
-                <button
-                  type="button"
-                  className="primary-btn"
-                  onClick={() => updateFutureStatus(
-                    project.id,
-                    'approved',
-                    getNotes(project.id),
-                    getCurrentClassification(project),
-                  )}
-                  disabled={!getCurrentClassification(project)}
-                >
-                  Approve to Current
-                </button>
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  onClick={() => updateFutureStatus(project.id, 'hold', getNotes(project.id))}
-                >
-                  Put On Hold
-                </button>
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  onClick={() => updateFutureStatus(project.id, 'denied', getNotes(project.id))}
-                >
-                  Deny
-                </button>
-              </div>
+                  <div className="detail-actions-row">
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      onClick={() => updateFutureStatus(
+                        project.id,
+                        'approved',
+                        getNotes(project.id),
+                        getCurrentClassification(project),
+                      )}
+                      disabled={!getCurrentClassification(project)}
+                    >
+                      Approve to Current
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => updateFutureStatus(project.id, 'hold', getNotes(project.id))}
+                    >
+                      Put On Hold
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => updateFutureStatus(project.id, 'denied', getNotes(project.id))}
+                    >
+                      Deny
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="detail-block">
+                  <div className="label">Review Notes</div>
+                  <div>{project.reviewNotes || '-'}</div>
+                </div>
+              )}
             </article>
           ))}
-          {futureProjects.length === 0 ? (
+          {visibleFutureProjects.length === 0 ? (
             <p className="muted">No projects are waiting in the future pipeline.</p>
           ) : null}
         </div>
@@ -125,7 +143,7 @@ export default function FutureProjectsPage() {
       <section className="panel">
         <div className="panel-header-row">
           <h2><Icon name="review" />Proposal Archive</h2>
-          <div className="muted">{archivedProposals.length} archived proposal(s)</div>
+          <div className="muted">{visibleArchivedProposals.length} archived proposal(s)</div>
         </div>
 
         <div className="table-wrap">
@@ -142,7 +160,7 @@ export default function FutureProjectsPage() {
               </tr>
             </thead>
             <tbody>
-              {archivedProposals.map((project) => (
+              {visibleArchivedProposals.map((project) => (
                 <tr key={project.id}>
                   <td>{project.proposalId || project.id}</td>
                   <td>{project.name}</td>
@@ -153,7 +171,7 @@ export default function FutureProjectsPage() {
                   <td>{project.reviewNotes || '-'}</td>
                 </tr>
               ))}
-              {archivedProposals.length === 0 ? (
+              {visibleArchivedProposals.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="muted">No archived proposals yet.</td>
                 </tr>

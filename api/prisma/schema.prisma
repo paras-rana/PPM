@@ -41,7 +41,7 @@ model risk_assessments {
   assessment_type String
   severity        Int
   probability     Int
-  score           Int?     @default(dbgenerated("(severity * probability)"))
+  score           Int?
   assessed_by     String?
   assessed_at     DateTime @default(now()) @db.Timestamp(6)
   notes           String?
@@ -54,8 +54,8 @@ model risk_assessments {
 model risk_grid {
   severity    Int
   probability Int
-  cell_key    Int?   @default(dbgenerated("((severity * 100) + probability)"))
-  score       Int?   @default(dbgenerated("(severity * probability)"))
+  cell_key    Int?
+  score       Int?
   band        String
   color_hex   String
 
@@ -77,8 +77,8 @@ model risks {
   inherent_probability Int
   residual_severity    Int?
   residual_probability Int?
-  inherent_score       Int?               @default(dbgenerated("(inherent_severity * inherent_probability)"))
-  residual_score       Int?               @default(dbgenerated("(residual_severity * residual_probability)"))
+  inherent_score       Int?
+  residual_score       Int?
   residual_notes       String?
   last_reassessed_at   DateTime?          @db.Timestamp(6)
   next_review_due      DateTime?          @db.Date

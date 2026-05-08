@@ -23,9 +23,11 @@ import StrategicPriorityPeriodRegisterPage from './pages/StrategicPriorityPeriod
 import StrategicPrioritiesPage from './pages/StrategicPrioritiesPage';
 import SubmissionReviewPage from './pages/SubmissionReviewPage';
 import SubmitProjectPage from './pages/SubmitProjectPage';
+import UserManagementPage from './pages/UserManagementPage';
+import RoleDefinitionPage from './pages/RoleDefinitionPage';
 
-function RequireAuth({ children }) {
-  const { authReady, isAuthenticated } = useAuth();
+function RequireAuth({ children, requiredPermissions = null, requiredAnyPermissions = null }) {
+  const { authReady, isAuthenticated, hasPermissions, hasAnyPermission } = useAuth();
   const location = useLocation();
 
   if (!authReady) {
@@ -34,6 +36,14 @@ function RequireAuth({ children }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (requiredPermissions && !hasPermissions(requiredPermissions)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (requiredAnyPermissions && !hasAnyPermission(requiredAnyPermissions)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -48,7 +58,7 @@ export default function App() {
         <Route
           path="/dashboard"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_portfolio_dashboard_all', 'view_portfolio_dashboard_owned']}>
               <PortfolioDashboardPage />
             </RequireAuth>
           )}
@@ -56,7 +66,7 @@ export default function App() {
         <Route
           path="/projects/current"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_all_projects', 'view_owned_projects']}>
               <CurrentProjectsPage />
             </RequireAuth>
           )}
@@ -64,7 +74,7 @@ export default function App() {
         <Route
           path="/operational-initiatives"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_all_initiatives', 'view_owned_initiatives']}>
               <AnnualOperationalInitiativesPage />
             </RequireAuth>
           )}
@@ -72,7 +82,7 @@ export default function App() {
         <Route
           path="/operational-initiatives/new"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredPermissions={['add_initiatives']}>
               <CreateAnnualOperationalInitiativePage />
             </RequireAuth>
           )}
@@ -80,7 +90,7 @@ export default function App() {
         <Route
           path="/operational-initiatives/register"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_all_initiatives', 'view_owned_initiatives']}>
               <OperationalInitiativeRegisterPage />
             </RequireAuth>
           )}
@@ -88,7 +98,7 @@ export default function App() {
         <Route
           path="/operational-initiatives/:initiativeId"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_all_initiatives', 'view_owned_initiatives']}>
               <OperationalInitiativeDetailPage />
             </RequireAuth>
           )}
@@ -96,7 +106,7 @@ export default function App() {
         <Route
           path="/projects/register"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_all_projects', 'view_owned_projects']}>
               <PortfolioRegisterPage />
             </RequireAuth>
           )}
@@ -104,7 +114,7 @@ export default function App() {
         <Route
           path="/projects/:projectId"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_all_projects', 'view_owned_projects']}>
               <ProjectDetailPage />
             </RequireAuth>
           )}
@@ -112,7 +122,7 @@ export default function App() {
         <Route
           path="/projects/future"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredAnyPermissions={['view_all_projects', 'view_owned_projects', 'review_proposals']}>
               <FutureProjectsPage />
             </RequireAuth>
           )}
@@ -120,7 +130,7 @@ export default function App() {
         <Route
           path="/projects/submit"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredPermissions={['submit_projects']}>
               <SubmitProjectPage />
             </RequireAuth>
           )}
@@ -128,7 +138,7 @@ export default function App() {
         <Route
           path="/projects/review"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredPermissions={['review_proposals']}>
               <SubmissionReviewPage />
             </RequireAuth>
           )}
@@ -136,7 +146,7 @@ export default function App() {
         <Route
           path="/projects/review/:projectId"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredPermissions={['review_proposals']}>
               <ProposalReviewPage />
             </RequireAuth>
           )}
@@ -144,7 +154,7 @@ export default function App() {
         <Route
           path="/strategic-priorities"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredPermissions={['view_strategies']}>
               <StrategicPrioritiesPage />
             </RequireAuth>
           )}
@@ -152,7 +162,7 @@ export default function App() {
         <Route
           path="/strategic-priorities/register"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredPermissions={['view_strategies']}>
               <StrategicPriorityPeriodRegisterPage />
             </RequireAuth>
           )}
@@ -160,8 +170,24 @@ export default function App() {
         <Route
           path="/strategic-priorities/new"
           element={(
-            <RequireAuth>
+            <RequireAuth requiredPermissions={['add_strategies']}>
               <CreateStrategicPriorityPeriodPage />
+            </RequireAuth>
+          )}
+        />
+        <Route
+          path="/admin/users"
+          element={(
+            <RequireAuth requiredPermissions={['manage_users']}>
+              <UserManagementPage />
+            </RequireAuth>
+          )}
+        />
+        <Route
+          path="/admin/users/roles"
+          element={(
+            <RequireAuth requiredPermissions={['manage_users']}>
+              <RoleDefinitionPage />
             </RequireAuth>
           )}
         />

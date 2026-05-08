@@ -1,12 +1,16 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthService } from './auth.service';
+import type { AuthRole, AuthUser, PermissionKey } from './auth.types';
+import { PERMISSIONS_KEY } from './permissions.decorator';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import { ROLES_KEY } from './roles.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -15,8 +19,16 @@ export class AuthGuard implements CanActivate {
     private readonly authService: AuthService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const requiredRoles = this.reflector.getAllAndOverride<AuthRole[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const requiredPermissions = this.reflector.getAllAndOverride<PermissionKey[]>(PERMISSIONS_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -27,7 +39,7 @@ export class AuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<{
       headers: Record<string, string | undefined>;
-      user?: unknown;
+      user?: AuthUser;
     }>();
 
     const authorization = request.headers.authorization;
@@ -36,7 +48,19 @@ export class AuthGuard implements CanActivate {
     }
 
     const token = authorization.slice('Bearer '.length).trim();
-    request.user = this.authService.verifyToken(token);
+    request.user = await this.authService.verifyToken(token);
+
+    if (requiredRoles?.length && !requiredRoles.includes(request.user.role)) {
+      throw new ForbiddenException('Insufficient role');
+    }
+
+    if (
+      requiredPermissions?.length
+      && !requiredPermissions.every((permission) => request.user?.permissions.includes(permission))
+    ) {
+      throw new ForbiddenException('Insufficient permission');
+    }
+
     return true;
   }
 }

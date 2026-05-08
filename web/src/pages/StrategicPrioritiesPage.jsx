@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import { usePpmProjects } from '../ppm/PpmProjectsContext';
@@ -9,6 +10,7 @@ function formatPeriodYears(period) {
 
 export default function StrategicPrioritiesPage() {
   const { activeStrategicPriorityPeriod } = usePpmProjects();
+  const { canAddStrategies } = useAuth();
   const selectedPeriod = activeStrategicPriorityPeriod ?? null;
 
   return (
@@ -25,14 +27,16 @@ export default function StrategicPrioritiesPage() {
             <Icon name="register" />
             View Period Register
           </Link>
-          <Link
-            className="primary-btn"
-            to="/strategic-priorities/new"
-            state={{ fromStrategicPriorities: true }}
-          >
-            <Icon name="plus" />
-            Create New Priority Period
-          </Link>
+          {canAddStrategies ? (
+            <Link
+              className="primary-btn"
+              to="/strategic-priorities/new"
+              state={{ fromStrategicPriorities: true }}
+            >
+              <Icon name="plus" />
+              Create New Priority Period
+            </Link>
+          ) : null}
         </>
       )}
     >

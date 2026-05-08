@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Permissions } from '../auth/permissions.decorator';
 import { RisksService } from './risks.service';
 import type {
   CreateAssessmentInput,
@@ -18,6 +19,7 @@ export class RisksController {
     return this.risksService.findAll();
   }
 
+  @Permissions('manage_risks')
   @Post()
   create(@Body() body: CreateRiskInput) {
     return this.risksService.createRisk(body);
@@ -28,6 +30,7 @@ export class RisksController {
     return this.risksService.findOne(id);
   }
 
+  @Permissions('manage_risks')
   @Post(':id/mitigations')
   createMitigation(
     @Param('id') id: string,
@@ -41,6 +44,7 @@ export class RisksController {
     return this.risksService.findMitigations(id);
   }
 
+  @Permissions('manage_risks')
   @Put(':id/mitigations/:mitigationId')
   updateMitigation(
     @Param('id') id: string,
@@ -50,6 +54,7 @@ export class RisksController {
     return this.risksService.updateMitigation(id, mitigationId, body);
   }
 
+  @Permissions('manage_risks')
   @Post(':id/assessments')
   createAssessment(
     @Param('id') id: string,
@@ -63,6 +68,7 @@ export class RisksController {
     return this.risksService.findAssessments(id);
   }
 
+  @Permissions('manage_risks')
   @Put(':id/assessments/:assessmentId')
   updateAssessment(
     @Param('id') id: string,

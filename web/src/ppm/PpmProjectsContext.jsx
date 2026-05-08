@@ -12,7 +12,7 @@ const PROJECTS_STORAGE_KEY = 'riskapp.ppm.projects';
 const PRIORITIES_STORAGE_KEY = 'riskapp.ppm.priorities';
 const OPERATIONAL_INITIATIVES_STORAGE_KEY = 'riskapp.ppm.operational-initiatives';
 const PROJECTS_DATA_VERSION_STORAGE_KEY = 'riskapp.ppm.projects-data-version';
-const PROJECTS_DATA_VERSION = '2026-04-18-major-project-import-initiative-ids-1';
+const PROJECTS_DATA_VERSION = '2026-05-07-submitted-project-review-queue-1';
 const REFERENCE_DATA_VERSION_STORAGE_KEY = 'riskapp.ppm.reference-data-version';
 const REFERENCE_DATA_VERSION = '2026-04-23-initiative-seed-updates-1';
 
@@ -549,6 +549,63 @@ const SEEDED_MAJOR_PROJECTS = [
   },
 ];
 
+const SEEDED_SUBMITTED_PROJECTS = [
+  {
+    id: 'PRJ-399',
+    proposalId: 'PRJ-399',
+    name: 'Enterprise Grant Management Workflow Modernization',
+    executiveSponsor: 'CFO',
+    businessOwner: 'Finance Director',
+    estimatedCost: '$680K',
+    targetStartQuarter: 'Q3 2026',
+    category: 'Efficiency',
+    currentProjectClassification: '',
+    operationalInitiativeId: '2026.3.1',
+    operationalInitiativeTitle: 'Strengthen the systems and processes required to improve financial stewardship',
+    strategicPriorityId: 'SP-203',
+    strategicPriorityTitle: 'Build strong financial resilience',
+    strategicAlignment: 'Build strong financial resilience',
+    strategicPriorityPeriodId: 'SPP-2024-2029',
+    strategicPriorityPeriodLabel: 'Strategic Priorities 2024-2029',
+    summary: 'Replace fragmented grant administration tasks with a standardized workflow, controls, and reporting model.',
+    projectPurpose: 'Improve grant intake, budget tracking, compliance checkpoints, and leadership visibility across the full grant lifecycle.',
+    scopeStatement: 'Includes workflow design, role and approval definitions, document standards, reporting requirements, and implementation planning for a centralized grant management operating model.',
+    expectedStartMonth: '2026-07',
+    durationMonths: '6',
+    costEstimateBreakdownFiles: ['grant-workflow-modernization-estimate.xlsx'],
+    scopeStatementFiles: ['grant-workflow-modernization-scope.pdf'],
+    teamMembers: [
+      'Finance Director',
+      'Grants Manager',
+      'Controller',
+      'Business Systems Analyst',
+    ],
+    expectedOutcomes: [
+      'Reduce manual grant handoffs and spreadsheet tracking',
+      'Improve compliance readiness for restricted-fund reporting',
+      'Create a standard management view of grant pipeline and execution',
+    ],
+    potentialRisks: [
+      'Current-state process variation may slow workflow standardization',
+      'System configuration decisions may depend on competing finance priorities',
+    ],
+    assumptions: [
+      'Finance and program teams can dedicate time for workflow design',
+      'No major ERP replacement decision is made during the initial rollout window',
+    ],
+    milestones: [
+      { id: 'MS-399-1', name: 'Current-state workflow assessment', quarter: '2026-07' },
+      { id: 'MS-399-2', name: 'Future-state design and controls', quarter: '2026-08' },
+      { id: 'MS-399-3', name: 'Implementation roadmap and approval', quarter: '2026-09' },
+    ],
+    stage: 'submitted',
+    status: 'pending_review',
+    proposalStatus: 'new_submission',
+    submittedAt: '2026-05-07',
+    reviewNotes: '',
+  },
+];
+
 const OPERATIONAL_PROJECT_SPREADSHEET_ROWS = [
   { initiativeTitle: 'Strengthen the scale and diversification of Pioneer Industries', title: 'Complete 5-year capex investment plan at 1% of gross revenue per year', businessOwner: 'Alex' },
   { initiativeTitle: 'Ensure equity is reflected in how Pioneer recruits, develops and advances talent', title: 'Conduct equity review of hiring, promotion and performance outcomes and implement corrective actions where disparities exist', businessOwner: 'Debbie' },
@@ -780,6 +837,7 @@ function buildSeededOperationalProject(row, index) {
 }
 
 const SEEDED_PROJECTS = [
+  ...SEEDED_SUBMITTED_PROJECTS,
   ...SEEDED_MAJOR_PROJECTS,
   ...OPERATIONAL_PROJECT_SPREADSHEET_ROWS.map(buildSeededOperationalProject),
 ];

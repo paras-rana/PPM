@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+type TransactionSqlClient = Pick<PrismaService, '$queryRaw' | '$executeRaw'>;
+
 const MITIGATION_STATUSES = [
   'Planned',
   'In Progress',
@@ -416,7 +418,7 @@ export class RisksService implements OnModuleInit {
         residual_score,
         last_reassessed_at,
         next_review_due
-      FROM erm.risks
+      FROM risks
       ORDER BY risk_id
       LIMIT 500
     `;
@@ -451,7 +453,7 @@ export class RisksService implements OnModuleInit {
         residual_probability,
         residual_score,
         last_reassessed_at
-      FROM erm.risks
+      FROM risks
       WHERE risk_id = ${riskId}
       LIMIT 1
     `;
@@ -482,7 +484,7 @@ export class RisksService implements OnModuleInit {
         estimated_cost,
         plan_url,
         notes
-      FROM erm.mitigations
+      FROM mitigations
       WHERE risk_id = ${riskId}
       ORDER BY
         CASE status
@@ -510,7 +512,7 @@ export class RisksService implements OnModuleInit {
         assessed_by,
         assessed_at,
         notes
-      FROM erm.risk_assessments
+      FROM risk_assessments
       WHERE risk_id = ${riskId}
       ORDER BY assessed_at DESC, assessment_id DESC
     `;
@@ -580,13 +582,15 @@ export class RisksService implements OnModuleInit {
         : Number(input.estimated_cost);
 
     return this.prisma.$transaction(async (tx): Promise<MitigationRow> => {
-      const nextRows = await tx.$queryRaw<{ mitigation_id: string }[]>`
+      const sqlTx = tx as TransactionSqlClient;
+
+      const nextRows = await sqlTx.$queryRaw<{ mitigation_id: string }[]>`
         WITH max_num AS (
           SELECT COALESCE(
             MAX(CAST(SUBSTRING(mitigation_id FROM '(\\d+)$') AS INTEGER)),
             0
           ) AS n
-          FROM erm.mitigations
+          FROM mitigations
           WHERE mitigation_id ~ '\\d+$'
         )
         SELECT 'M-' || LPAD((n + 1)::text, 4, '0') AS mitigation_id
@@ -598,8 +602,8 @@ export class RisksService implements OnModuleInit {
         throw new BadRequestException('Failed to generate mitigation ID');
       }
 
-      const inserted = await tx.$queryRaw<MitigationRow[]>`
-        INSERT INTO erm.mitigations (
+      const inserted = await sqlTx.$queryRaw<MitigationRow[]>`
+        INSERT INTO mitigations (
           mitigation_id,
           risk_id,
           title,
@@ -651,8 +655,8 @@ export class RisksService implements OnModuleInit {
           notes
       `;
 
-      await tx.$executeRaw`
-        UPDATE erm.risks
+      await sqlTx.$executeRaw`
+        UPDATE risks
         SET updated_at = NOW()
         WHERE risk_id = ${riskId}
       `;
@@ -685,7 +689,7 @@ export class RisksService implements OnModuleInit {
         estimated_cost,
         plan_url,
         notes
-      FROM erm.mitigations
+      FROM mitigations
       WHERE mitigation_id = ${mitigationId}
         AND risk_id = ${riskId}
       LIMIT 1
@@ -769,8 +773,10 @@ export class RisksService implements OnModuleInit {
           : Number(input.estimated_cost);
 
     return this.prisma.$transaction(async (tx): Promise<MitigationRow> => {
-      const updated = await tx.$queryRaw<MitigationRow[]>`
-        UPDATE erm.mitigations
+      const sqlTx = tx as TransactionSqlClient;
+
+      const updated = await sqlTx.$queryRaw<MitigationRow[]>`
+        UPDATE mitigations
         SET
           title = ${title},
           status = ${status},
@@ -805,8 +811,8 @@ export class RisksService implements OnModuleInit {
           notes
       `;
 
-      await tx.$executeRaw`
-        UPDATE erm.risks
+      await sqlTx.$executeRaw`
+        UPDATE risks
         SET updated_at = NOW()
         WHERE risk_id = ${riskId}
       `;
@@ -847,9 +853,11 @@ export class RisksService implements OnModuleInit {
     const notes = input.notes?.trim() || null;
 
     return this.prisma.$transaction(async (tx): Promise<AssessmentRow> => {
+      const sqlTx = tx as TransactionSqlClient;
+
       if (assessmentType === 'INHERENT') {
-        await tx.$executeRaw`
-          UPDATE erm.risks
+        await sqlTx.$executeRaw`
+          UPDATE risks
           SET
             inherent_severity = ${severity},
             inherent_probability = ${probability},
@@ -859,8 +867,8 @@ export class RisksService implements OnModuleInit {
       }
 
       if (assessmentType === 'RESIDUAL') {
-        await tx.$executeRaw`
-          UPDATE erm.risks
+        await sqlTx.$executeRaw`
+          UPDATE risks
           SET
             residual_severity = ${severity},
             residual_probability = ${probability},
@@ -871,8 +879,8 @@ export class RisksService implements OnModuleInit {
         `;
       }
 
-      const inserted = await tx.$queryRaw<AssessmentRow[]>`
-        INSERT INTO erm.risk_assessments (
+      const inserted = await sqlTx.$queryRaw<AssessmentRow[]>`
+        INSERT INTO risk_assessments (
           risk_id,
           assessment_type,
           severity,
@@ -922,7 +930,7 @@ export class RisksService implements OnModuleInit {
         assessed_by,
         assessed_at,
         notes
-      FROM erm.risk_assessments
+      FROM risk_assessments
       WHERE assessment_id::text = ${assessmentId}
         AND risk_id = ${riskId}
       LIMIT 1
@@ -972,9 +980,11 @@ export class RisksService implements OnModuleInit {
       input.notes === undefined ? existing.notes : (input.notes.trim() || null);
 
     return this.prisma.$transaction(async (tx): Promise<AssessmentRow> => {
+      const sqlTx = tx as TransactionSqlClient;
+
       if (assessmentType === 'INHERENT') {
-        await tx.$executeRaw`
-          UPDATE erm.risks
+        await sqlTx.$executeRaw`
+          UPDATE risks
           SET
             inherent_severity = ${severity},
             inherent_probability = ${probability},
@@ -984,8 +994,8 @@ export class RisksService implements OnModuleInit {
       }
 
       if (assessmentType === 'RESIDUAL') {
-        await tx.$executeRaw`
-          UPDATE erm.risks
+        await sqlTx.$executeRaw`
+          UPDATE risks
           SET
             residual_severity = ${severity},
             residual_probability = ${probability},
@@ -996,8 +1006,8 @@ export class RisksService implements OnModuleInit {
         `;
       }
 
-      const updated = await tx.$queryRaw<AssessmentRow[]>`
-        UPDATE erm.risk_assessments
+      const updated = await sqlTx.$queryRaw<AssessmentRow[]>`
+        UPDATE risk_assessments
         SET
           assessment_type = ${assessmentType},
           severity = ${severity},
@@ -1101,10 +1111,12 @@ export class RisksService implements OnModuleInit {
         : null;
 
     return this.prisma.$transaction(async (tx): Promise<CreatedRiskRow> => {
-      const nextIdRows = await tx.$queryRaw<{ risk_id: string }[]>`
+      const sqlTx = tx as TransactionSqlClient;
+
+      const nextIdRows = await sqlTx.$queryRaw<{ risk_id: string }[]>`
         WITH max_num AS (
           SELECT COALESCE(MAX(CAST(SUBSTRING(risk_id FROM 'R-(\\d+)$') AS INTEGER)), 0) AS n
-          FROM erm.risks
+          FROM risks
         )
         SELECT 'R-' || LPAD((n + 1)::text, 3, '0') AS risk_id
         FROM max_num
@@ -1113,8 +1125,8 @@ export class RisksService implements OnModuleInit {
       const riskId = nextIdRows[0]?.risk_id;
       if (!riskId) throw new BadRequestException('Failed to generate risk ID');
 
-      const insertedRows = await tx.$queryRaw<CreatedRiskRow[]>`
-        INSERT INTO erm.risks (
+      const insertedRows = await sqlTx.$queryRaw<CreatedRiskRow[]>`
+        INSERT INTO risks (
           risk_id,
           title,
           description,
@@ -1170,8 +1182,8 @@ export class RisksService implements OnModuleInit {
           next_review_due
       `;
 
-      await tx.$executeRaw`
-        INSERT INTO erm.risk_assessments (
+      await sqlTx.$executeRaw`
+        INSERT INTO risk_assessments (
           risk_id,
           assessment_type,
           severity,
@@ -1190,8 +1202,8 @@ export class RisksService implements OnModuleInit {
       `;
 
       if (residualProvided) {
-        await tx.$executeRaw`
-          INSERT INTO erm.risk_assessments (
+        await sqlTx.$executeRaw`
+          INSERT INTO risk_assessments (
             risk_id,
             assessment_type,
             severity,
@@ -1218,7 +1230,7 @@ export class RisksService implements OnModuleInit {
     for (const risk of SEEDED_PROJECT_RISKS) {
       const existingRows = await this.prisma.$queryRaw<{ risk_id: string }[]>`
         SELECT risk_id
-        FROM erm.risks
+        FROM risks
         WHERE title = ${risk.title ?? ''}
           AND site_or_program = ${risk.site_or_program ?? null}
         LIMIT 1
@@ -1232,3 +1244,5 @@ export class RisksService implements OnModuleInit {
     }
   }
 }
+
+

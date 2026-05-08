@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
+import {
+  canViewAllPortfolioDashboard,
+  canViewInitiative,
+  canViewProject,
+} from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import { usePpmProjects } from '../ppm/PpmProjectsContext';
@@ -331,12 +337,47 @@ function buildOperationalInitiativeItems(operationalInitiatives, activeStrategic
 
 export default function PortfolioDashboardPage() {
   const {
-    currentProjects,
-    futureProjects,
-    submittedProjects,
-    operationalInitiatives,
+    currentProjects: rawCurrentProjects,
+    futureProjects: rawFutureProjects,
+    submittedProjects: rawSubmittedProjects,
+    operationalInitiatives: rawOperationalInitiatives,
     activeStrategicPriorityPeriod,
   } = usePpmProjects();
+  const { permissions, user } = useAuth();
+  const canViewAllDashboardItems = canViewAllPortfolioDashboard(permissions);
+  const currentProjects = useMemo(
+    () => (canViewAllDashboardItems
+      ? rawCurrentProjects
+      : rawCurrentProjects.filter((project) => canViewProject(permissions, user, project))),
+    [canViewAllDashboardItems, permissions, rawCurrentProjects, user],
+  );
+  const futureProjects = useMemo(
+    () => (canViewAllDashboardItems
+      ? rawFutureProjects
+      : rawFutureProjects.filter((project) => canViewProject(permissions, user, project))),
+    [canViewAllDashboardItems, permissions, rawFutureProjects, user],
+  );
+  const submittedProjects = useMemo(
+    () => (canViewAllDashboardItems
+      ? rawSubmittedProjects
+      : rawSubmittedProjects.filter((project) => canViewProject(permissions, user, project))),
+    [canViewAllDashboardItems, permissions, rawSubmittedProjects, user],
+  );
+  const operationalInitiatives = useMemo(
+    () => (canViewAllDashboardItems
+      ? rawOperationalInitiatives
+      : rawOperationalInitiatives.filter((initiative) => {
+        const relatedProjects = rawCurrentProjects.filter(
+          (project) => project.currentProjectClassification === 'Major project'
+            && (
+              project.operationalInitiativeId === initiative.id
+              || project.operationalInitiativeTitle === initiative.title
+            ),
+        );
+        return canViewInitiative(permissions, user, initiative, relatedProjects);
+      })),
+    [canViewAllDashboardItems, permissions, rawCurrentProjects, rawOperationalInitiatives, user],
+  );
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedSummaryCard, setSelectedSummaryCard] = useState(null);
   const [selectedOwnerStatusCell, setSelectedOwnerStatusCell] = useState(null);

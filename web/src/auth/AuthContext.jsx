@@ -1,8 +1,25 @@
 import { useEffect, useState } from 'react';
 import { AuthContext } from './authContextValue';
 import { WORKSPACES, isValidWorkspace } from '../lib/workspace';
+import {
+  canAddInitiatives,
+  canAddStrategies,
+  canManagePortfolio,
+  canManageRisks,
+  canManageStrategy,
+  canManageUsers,
+  canViewInitiatives,
+  canViewPortfolioDashboard,
+  canViewProjects,
+  canViewStrategies,
+  canReviewProposals,
+  canSubmitProjects,
+  hasAllPermissions,
+  hasAnyPermission,
+  normalizePermissions,
+} from './roles';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001';
 const AUTH_STORAGE_KEY = import.meta.env.VITE_AUTH_STORAGE_KEY ?? 'riskapp.ppm.auth';
 const ACTIVE_WORKSPACE_STORAGE_KEY = 'riskapp.active-workspace';
 const APP_WORKSPACE = WORKSPACES.PPM;
@@ -29,6 +46,13 @@ function normalizeSession(session) {
 
   return {
     ...session,
+    user: session.user
+      ? {
+          ...session.user,
+          role: String(session.user.role ?? '').trim().toUpperCase(),
+          permissions: normalizePermissions(session.user.permissions),
+        }
+      : null,
     workspace: isValidWorkspace(session.workspace) ? session.workspace : APP_WORKSPACE,
   };
 }
@@ -36,6 +60,8 @@ function normalizeSession(session) {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => normalizeSession(readStoredSession()));
   const [authReady, setAuthReady] = useState(false);
+  const role = String(session?.user?.role ?? '').trim().toUpperCase();
+  const permissions = normalizePermissions(session?.user?.permissions);
 
   useEffect(() => {
     async function validateSession() {
@@ -142,8 +168,24 @@ export function AuthProvider({ children }) {
         isAuthenticated: Boolean(session?.token),
         token: session?.token ?? '',
         user: session?.user ?? null,
+        role,
+        permissions,
         expiresAt: session?.expiresAt ?? null,
         workspace: session?.workspace ?? APP_WORKSPACE,
+        hasPermissions: (requiredPermissions) => hasAllPermissions(permissions, requiredPermissions),
+        hasAnyPermission: (requiredPermissions) => hasAnyPermission(permissions, requiredPermissions),
+        canViewPortfolioDashboard: canViewPortfolioDashboard(permissions),
+        canViewProjects: canViewProjects(permissions),
+        canViewInitiatives: canViewInitiatives(permissions),
+        canViewStrategies: canViewStrategies(permissions),
+        canAddStrategies: canAddStrategies(permissions),
+        canAddInitiatives: canAddInitiatives(permissions),
+        canManageStrategy: canManageStrategy(permissions),
+        canManageUsers: canManageUsers(permissions),
+        canReviewProposals: canReviewProposals(permissions),
+        canSubmitProjects: canSubmitProjects(permissions),
+        canManagePortfolio: canManagePortfolio(permissions),
+        canManageRisks: canManageRisks(permissions),
         login,
         logout,
         setWorkspace,

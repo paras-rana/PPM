@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
+import { canViewProject } from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import { usePpmProjects } from '../ppm/PpmProjectsContext';
@@ -96,10 +98,12 @@ function renderProjectsTable(projects) {
 
 export default function CurrentProjectsPage() {
   const { currentProjects } = usePpmProjects();
-  const majorProjects = currentProjects.filter(
+  const { permissions, user } = useAuth();
+  const visibleProjects = currentProjects.filter((project) => canViewProject(permissions, user, project));
+  const majorProjects = visibleProjects.filter(
     (project) => project.currentProjectClassification === 'Major project',
   );
-  const operationalProjects = currentProjects.filter(
+  const operationalProjects = visibleProjects.filter(
     (project) => project.currentProjectClassification === 'Operational project',
   );
 
@@ -111,10 +115,10 @@ export default function CurrentProjectsPage() {
       <section className="panel">
         <div className="panel-header-row">
           <h2><Icon name="dashboard" />Active Portfolio</h2>
-          <div className="muted">{currentProjects.length} current project(s)</div>
+          <div className="muted">{visibleProjects.length} current project(s)</div>
         </div>
 
-        {currentProjects.length === 0 ? (
+        {visibleProjects.length === 0 ? (
           <p className="muted">No approved projects are active yet.</p>
         ) : (
           <div>

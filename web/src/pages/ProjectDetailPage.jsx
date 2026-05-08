@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import pptxgen from 'pptxgenjs';
 import { useAuth } from '../auth/useAuth';
+import { canEditProject, canSubmitStatusUpdates, canViewProject } from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import PmoRiskDrawer from '../components/PmoRiskDrawer';
@@ -963,7 +964,7 @@ function downloadProjectDocument(fileName) {
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams();
-  const { token, logout } = useAuth();
+  const { token, logout, canManageRisks, permissions, user } = useAuth();
   const {
     getProjectById,
     saveWeeklyUpdate,
@@ -972,6 +973,9 @@ export default function ProjectDetailPage() {
     saveProjectMilestones,
   } = usePpmProjects();
   const project = getProjectById(projectId);
+  const canViewProjectDetail = project ? canViewProject(permissions, user, project) : false;
+  const canEditProjectDetail = project ? canEditProject(permissions, user, project) : false;
+  const canUpdateProjectStatus = canEditProjectDetail || canSubmitStatusUpdates(permissions);
   const isOperationalProject = project?.currentProjectClassification === 'Operational project';
   const {
     pastWeekStart,
@@ -1063,6 +1067,10 @@ export default function ProjectDetailPage() {
         </section>
       </AppFrame>
     );
+  }
+
+  if (!canViewProjectDetail) {
+    return <Navigate to="/projects/current" replace />;
   }
 
   const projectHealth = getProjectHealth(project);
@@ -1824,9 +1832,11 @@ export default function ProjectDetailPage() {
             <div className="panel-header-row">
               <div className="detail-actions-row">
                 <div className="muted">Assigned project participants and delivery contacts</div>
-                <button type="button" className="secondary-btn" onClick={openTeamEditor}>
-                  Edit Team
-                </button>
+                {canEditProjectDetail ? (
+                  <button type="button" className="secondary-btn" onClick={openTeamEditor}>
+                    Edit Team
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="detail-block">
@@ -1848,13 +1858,15 @@ export default function ProjectDetailPage() {
             <div className="panel-header-row">
               <div className="detail-actions-row">
                 <div className="muted">Supporting attachments and scope documentation</div>
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  onClick={openNewDocumentEditor}
-                >
-                  Add New Document
-                </button>
+                {canEditProjectDetail ? (
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={openNewDocumentEditor}
+                  >
+                    Add New Document
+                  </button>
+                ) : null}
               </div>
             </div>
             <div className="table-wrap">
@@ -1884,13 +1896,15 @@ export default function ProjectDetailPage() {
                           >
                             Download
                           </button>
-                          <button
-                            type="button"
-                            className="secondary-btn"
-                            onClick={() => openDocumentVersionEditor(document.category)}
-                          >
-                            Upload New Version
-                          </button>
+                          {canEditProjectDetail ? (
+                            <button
+                              type="button"
+                              className="secondary-btn"
+                              onClick={() => openDocumentVersionEditor(document.category)}
+                            >
+                              Upload New Version
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
@@ -1912,9 +1926,11 @@ export default function ProjectDetailPage() {
           <h2><Icon name="review" />{updateTitle}</h2>
           <div className="detail-actions-row">
             <div className="muted">{progressSummaryLabel}</div>
-            <button type="button" className="secondary-btn" onClick={openProgressUpdate}>
-              {progressButtonLabel}
-            </button>
+            {canUpdateProjectStatus ? (
+              <button type="button" className="secondary-btn" onClick={openProgressUpdate}>
+                {progressButtonLabel}
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -1967,9 +1983,11 @@ export default function ProjectDetailPage() {
           <h2><Icon name="dashboard" />Milestones</h2>
           <div className="detail-actions-row">
             <div className="muted">{milestoneRows.length} milestone(s)</div>
-            <button type="button" className="secondary-btn" onClick={openMilestoneEditor}>
-              Edit Milestones
-            </button>
+            {canEditProjectDetail ? (
+              <button type="button" className="secondary-btn" onClick={openMilestoneEditor}>
+                Edit Milestones
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -2009,13 +2027,15 @@ export default function ProjectDetailPage() {
           <h2><Icon name="risk" />ERM Risks</h2>
           <div className="detail-actions-row">
             <div className="muted">{sortedProjectRisks.length} linked risk(s)</div>
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => setShowRiskDrawer(true)}
-            >
-              Add New Risk
-            </button>
+            {canManageRisks ? (
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setShowRiskDrawer(true)}
+              >
+                Add New Risk
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -2078,7 +2098,7 @@ export default function ProjectDetailPage() {
         ) : null}
       </section>
       <PmoRiskDrawer
-        isOpen={showRiskDrawer}
+        isOpen={canManageRisks && showRiskDrawer}
         onClose={() => setShowRiskDrawer(false)}
         onCreated={handleRiskCreated}
         category="Major Project"

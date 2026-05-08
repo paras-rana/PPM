@@ -51,7 +51,18 @@ export default function AppFrame({
   detailLabel = null,
   topNavActions = null,
 }) {
-  const { user, logout } = useAuth();
+  const {
+    user,
+    logout,
+    canAddInitiatives,
+    canManageUsers,
+    canReviewProposals,
+    canSubmitProjects,
+    canViewInitiatives,
+    canViewPortfolioDashboard,
+    canViewProjects,
+    canViewStrategies,
+  } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const bandState = { index: 1 };
@@ -77,86 +88,124 @@ export default function AppFrame({
       <div className="app-layout">
         <aside className="side-nav">
           <nav className="side-nav-links" aria-label="Primary navigation">
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-purple ${isActive ? 'active' : ''}`}
-              to="/dashboard"
-              aria-label="Portfolio Dashboard"
-              data-label="Portfolio Dashboard"
-            >
-              <Icon name="dashboard" />
-              <span className="side-nav-link-label">Portfolio Dashboard</span>
-            </NavLink>
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-orange ${isActive ? 'active' : ''}`}
-              to="/projects/current"
-              aria-label="Current Projects"
-              data-label="Current Projects"
-            >
-              <Icon name="dashboard" />
-              <span className="side-nav-link-label">Current Projects</span>
-            </NavLink>
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-green ${isActive ? 'active' : ''}`}
-              to="/projects/future"
-              aria-label="Future Projects"
-              data-label="Future Projects"
-            >
-              <Icon name="portfolio" />
-              <span className="side-nav-link-label">Future Projects</span>
-            </NavLink>
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-blue ${isActive ? 'active' : ''}`}
-              to="/projects/register"
-              aria-label="Portfolio Register"
-              data-label="Portfolio Register"
-            >
-              <Icon name="register" />
-              <span className="side-nav-link-label">Portfolio Register</span>
-            </NavLink>
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-purple ${isActive ? 'active' : ''}`}
-              to="/projects/submit"
-              aria-label="Submit Project"
-              data-label="Submit Project"
-            >
-              <Icon name="plus" />
-              <span className="side-nav-link-label">Submit Project</span>
-            </NavLink>
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-red ${isActive ? 'active' : ''}`}
-              to="/projects/review"
-              aria-label="Review Queue"
-              data-label="Review Queue"
-            >
-              <Icon name="review" />
-              <span className="side-nav-link-label">Review Queue</span>
-            </NavLink>
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-purple ${isActive ? 'active' : ''}`}
-              to="/strategic-priorities"
-              aria-label="Strategic Priorities"
-              data-label="Strategic Priorities"
-            >
-              <Icon name="assessment" />
-              <span className="side-nav-link-label">Strategic Priorities</span>
-            </NavLink>
-            <NavLink
-              end
-              className={({ isActive }) => `nav-link side-nav-link band-orange ${isActive ? 'active' : ''}`}
-              to="/operational-initiatives"
-              aria-label="Annual Operational Initiatives"
-              data-label="Annual Operational Initiatives"
-            >
-              <Icon name="portfolio" />
-              <span className="side-nav-link-label">Annual Operational Initiatives</span>
-            </NavLink>
+            {canViewPortfolioDashboard ? (
+              <NavLink
+                end
+                className={({ isActive }) => `nav-link side-nav-link band-purple ${isActive ? 'active' : ''}`}
+                to="/dashboard"
+                aria-label="Portfolio Dashboard"
+                data-label="Portfolio Dashboard"
+              >
+                <Icon name="dashboard" />
+                <span className="side-nav-link-label">Portfolio Dashboard</span>
+              </NavLink>
+            ) : null}
+            {canViewProjects ? (
+              <>
+                <NavLink
+                  end
+                  className={({ isActive }) => `nav-link side-nav-link band-orange ${isActive ? 'active' : ''}`}
+                  to="/projects/current"
+                  aria-label="Current Projects"
+                  data-label="Current Projects"
+                >
+                  <Icon name="dashboard" />
+                  <span className="side-nav-link-label">Current Projects</span>
+                </NavLink>
+                <NavLink
+                  end
+                  className={({ isActive }) => `nav-link side-nav-link band-green ${isActive ? 'active' : ''}`}
+                  to="/projects/future"
+                  aria-label="Future Projects"
+                  data-label="Future Projects"
+                >
+                  <Icon name="portfolio" />
+                  <span className="side-nav-link-label">Future Projects</span>
+                </NavLink>
+                <NavLink
+                  end
+                  className={({ isActive }) => `nav-link side-nav-link band-blue ${isActive ? 'active' : ''}`}
+                  to="/projects/register"
+                  aria-label="Portfolio Register"
+                  data-label="Portfolio Register"
+                >
+                  <Icon name="register" />
+                  <span className="side-nav-link-label">Portfolio Register</span>
+                </NavLink>
+              </>
+            ) : null}
+            {canSubmitProjects ? (
+              <NavLink
+                end
+                className={({ isActive }) => `nav-link side-nav-link band-purple ${isActive ? 'active' : ''}`}
+                to="/projects/submit"
+                aria-label="Submit Project"
+                data-label="Submit Project"
+              >
+                <Icon name="plus" />
+                <span className="side-nav-link-label">Submit Project</span>
+              </NavLink>
+            ) : null}
+            {canReviewProposals ? (
+              <NavLink
+                end
+                className={({ isActive }) => `nav-link side-nav-link band-red ${isActive ? 'active' : ''}`}
+                to="/projects/review"
+                aria-label="Review Queue"
+                data-label="Review Queue"
+              >
+                <Icon name="review" />
+                <span className="side-nav-link-label">Review Queue</span>
+              </NavLink>
+            ) : null}
+            {canViewStrategies ? (
+              <NavLink
+                end
+                className={({ isActive }) => `nav-link side-nav-link band-purple ${isActive ? 'active' : ''}`}
+                to="/strategic-priorities"
+                aria-label="Strategic Priorities"
+                data-label="Strategic Priorities"
+              >
+                <Icon name="assessment" />
+                <span className="side-nav-link-label">Strategic Priorities</span>
+              </NavLink>
+            ) : null}
+            {canViewInitiatives ? (
+              <NavLink
+                end
+                className={({ isActive }) => `nav-link side-nav-link band-orange ${isActive ? 'active' : ''}`}
+                to="/operational-initiatives"
+                aria-label="Annual Operational Initiatives"
+                data-label="Annual Operational Initiatives"
+              >
+                <Icon name="portfolio" />
+                <span className="side-nav-link-label">Annual Operational Initiatives</span>
+              </NavLink>
+            ) : null}
+            {canAddInitiatives ? (
+              <NavLink
+                end
+                className={({ isActive }) => `nav-link side-nav-link band-green ${isActive ? 'active' : ''}`}
+                to="/operational-initiatives/new"
+                aria-label="Add Annual Operational Initiative"
+                data-label="Add Annual Operational Initiative"
+              >
+                <Icon name="plus" />
+                <span className="side-nav-link-label">Add Annual Operational Initiative</span>
+              </NavLink>
+            ) : null}
+            {canManageUsers ? (
+              <NavLink
+                end
+                className={({ isActive }) => `nav-link side-nav-link band-red ${isActive ? 'active' : ''}`}
+                to="/admin/users"
+                aria-label="User Management"
+                data-label="User Management"
+              >
+                <Icon name="register" />
+                <span className="side-nav-link-label">User Management</span>
+              </NavLink>
+            ) : null}
             {detailLabel ? (
               <span
                 className="nav-link side-nav-link band-blue active"

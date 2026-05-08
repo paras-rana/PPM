@@ -3,6 +3,21 @@ import { INestApplication, Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+function withSchemaSearchPath(connectionString: string): string {
+  const url = new URL(connectionString);
+  const schema = url.searchParams.get('schema');
+  const hasOptions = url.searchParams.has('options');
+
+  if (!schema || hasOptions) {
+    return connectionString;
+  }
+
+  const quotedSchema = `"${schema.replace(/"/g, '""')}"`;
+  url.searchParams.set('options', `-csearch_path=${quotedSchema},public`);
+
+  return url.toString();
+}
+
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
@@ -13,7 +28,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       throw new Error('DATABASE_URL is not set in .env');
     }
 
-    const adapter = new PrismaPg({ connectionString });
+    const adapter = new PrismaPg({
+      connectionString: withSchemaSearchPath(connectionString),
+    });
 
     super({ adapter });
   }

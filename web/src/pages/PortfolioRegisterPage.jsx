@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
+import { canViewInitiative, canViewProject } from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import { usePpmProjects } from '../ppm/PpmProjectsContext';
@@ -197,13 +199,39 @@ function RegisterTable({ columns, emptyMessage, rows, renderRow }) {
 
 export default function PortfolioRegisterPage() {
   const { projects, archivedProposals, currentProjects, operationalInitiatives } = usePpmProjects();
+  const { permissions, user } = useAuth();
+  const visibleCurrentProjects = useMemo(
+    () => currentProjects.filter((project) => canViewProject(permissions, user, project)),
+    [currentProjects, permissions, user],
+  );
+  const visibleProjects = useMemo(
+    () => projects.filter((project) => canViewProject(permissions, user, project)),
+    [permissions, projects, user],
+  );
+  const visibleArchivedProposals = useMemo(
+    () => archivedProposals.filter((project) => canViewProject(permissions, user, project)),
+    [archivedProposals, permissions, user],
+  );
+  const visibleInitiatives = useMemo(
+    () => operationalInitiatives.filter((initiative) => {
+      const relatedProjects = currentProjects.filter(
+        (project) => project.currentProjectClassification === 'Major project'
+          && (
+            project.operationalInitiativeId === initiative.id
+            || project.operationalInitiativeTitle === initiative.title
+          ),
+      );
+      return canViewInitiative(permissions, user, initiative, relatedProjects);
+    }),
+    [currentProjects, operationalInitiatives, permissions, user],
+  );
   const initiativeItems = useMemo(
-    () => buildInitiativeItems(currentProjects, operationalInitiatives),
-    [currentProjects, operationalInitiatives],
+    () => buildInitiativeItems(visibleCurrentProjects, visibleInitiatives),
+    [visibleCurrentProjects, visibleInitiatives],
   );
   const majorProjectItems = useMemo(
-    () => buildMajorProjectItems(projects, archivedProposals),
-    [projects, archivedProposals],
+    () => buildMajorProjectItems(visibleProjects, visibleArchivedProposals),
+    [visibleArchivedProposals, visibleProjects],
   );
 
   return (

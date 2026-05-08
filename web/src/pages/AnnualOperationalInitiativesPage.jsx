@@ -1,22 +1,27 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
+import { canViewInitiative } from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import { usePpmProjects } from '../ppm/PpmProjectsContext';
 
 export default function AnnualOperationalInitiativesPage() {
-  const { operationalInitiatives, activeStrategicPriorityPeriod } = usePpmProjects();
+  const { operationalInitiatives, activeStrategicPriorityPeriod, currentProjects } = usePpmProjects();
+  const { canAddInitiatives, permissions, user } = useAuth();
   const currentYear = Math.max(
     ...operationalInitiatives
       .filter((initiative) => initiative.strategicPriorityPeriodId === activeStrategicPriorityPeriod?.id)
       .map((initiative) => Number(initiative.year) || 0),
     new Date().getFullYear(),
   );
-  const currentInitiatives = operationalInitiatives.filter(
-    (initiative) => (
+  const currentInitiatives = operationalInitiatives.filter((initiative) => {
+    const relatedProjects = currentProjects.filter((project) => project.operationalInitiativeId === initiative.id);
+    return (
       initiative.strategicPriorityPeriodId === activeStrategicPriorityPeriod?.id
       && Number(initiative.year) === currentYear
-    ),
-  );
+      && canViewInitiative(permissions, user, initiative, relatedProjects)
+    );
+  });
   const initiativesByPriority = currentInitiatives.reduce((groups, initiative) => {
     const key = initiative.strategicPriorityTitle || 'Unassigned Strategic Priority';
     if (!groups[key]) {
@@ -37,14 +42,16 @@ export default function AnnualOperationalInitiativesPage() {
             <Icon name="register" />
             View Initiative Register
           </Link>
-          <Link
-            className="primary-btn"
-            to="/operational-initiatives/new"
-            state={{ fromOperationalInitiatives: true }}
-          >
-            <Icon name="plus" />
-            Add Annual Operational Initiative
-          </Link>
+          {canAddInitiatives ? (
+            <Link
+              className="primary-btn"
+              to="/operational-initiatives/new"
+              state={{ fromOperationalInitiatives: true }}
+            >
+              <Icon name="plus" />
+              Add Annual Operational Initiative
+            </Link>
+          ) : null}
         </>
       )}
     >

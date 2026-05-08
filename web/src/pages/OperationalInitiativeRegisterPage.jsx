@@ -1,15 +1,31 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
+import { canViewInitiative } from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import { usePpmProjects } from '../ppm/PpmProjectsContext';
 
 export default function OperationalInitiativeRegisterPage() {
-  const { operationalInitiatives } = usePpmProjects();
+  const { operationalInitiatives, currentProjects } = usePpmProjects();
+  const { permissions, user } = useAuth();
   const [expandedYears, setExpandedYears] = useState(() => new Set());
+  const visibleInitiatives = useMemo(
+    () => operationalInitiatives.filter((initiative) => {
+      const relatedProjects = currentProjects.filter(
+        (project) => project.currentProjectClassification === 'Major project'
+          && (
+            project.operationalInitiativeId === initiative.id
+            || project.operationalInitiativeTitle === initiative.title
+          ),
+      );
+      return canViewInitiative(permissions, user, initiative, relatedProjects);
+    }),
+    [currentProjects, operationalInitiatives, permissions, user],
+  );
 
   const years = useMemo(() => {
-    const grouped = operationalInitiatives.reduce((map, initiative) => {
+    const grouped = visibleInitiatives.reduce((map, initiative) => {
       const year = Number(initiative.year) || new Date().getFullYear();
       const current = map.get(year) ?? [];
       current.push(initiative);
@@ -20,7 +36,7 @@ export default function OperationalInitiativeRegisterPage() {
     return [...grouped.entries()]
       .sort((left, right) => right[0] - left[0])
       .map(([year, initiatives]) => ({ year, initiatives }));
-  }, [operationalInitiatives]);
+  }, [visibleInitiatives]);
 
   function toggleYear(year) {
     setExpandedYears((current) => {

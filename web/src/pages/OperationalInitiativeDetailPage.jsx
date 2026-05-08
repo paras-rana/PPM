@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import pptxgen from 'pptxgenjs';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
+import { canEditInitiative, canSubmitStatusUpdates, canViewInitiative } from '../auth/roles';
 import AppFrame from '../components/AppFrame';
 import Icon from '../components/Icon';
 import PmoRiskDrawer from '../components/PmoRiskDrawer';
@@ -536,7 +537,7 @@ function buildRowProgressActionTarget(update, overallTone) {
 
 export default function OperationalInitiativeDetailPage() {
   const { initiativeId } = useParams();
-  const { token, logout } = useAuth();
+  const { token, logout, canManageRisks, permissions, user } = useAuth();
   const {
     operationalInitiatives,
     currentProjects,
@@ -567,6 +568,13 @@ export default function OperationalInitiativeDetailPage() {
     ),
     [currentProjects, initiativeId, initiative?.title],
   );
+  const canViewInitiativeDetail = initiative
+    ? canViewInitiative(permissions, user, initiative, relatedProjects)
+    : false;
+  const canEditInitiativeDetail = initiative
+    ? canEditInitiative(permissions, user, initiative, relatedProjects)
+    : false;
+  const canUpdateInitiativeStatus = canEditInitiativeDetail || canSubmitStatusUpdates(permissions);
 
   useEffect(() => {
     if (!initiative || !token) {
@@ -683,6 +691,10 @@ export default function OperationalInitiativeDetailPage() {
   }, [openProgressActionsRow]);
 
   if (!initiative) {
+    return <Navigate to="/operational-initiatives" replace />;
+  }
+
+  if (!canViewInitiativeDetail) {
     return <Navigate to="/operational-initiatives" replace />;
   }
 
@@ -1640,7 +1652,7 @@ export default function OperationalInitiativeDetailPage() {
                     <button type="button" className="secondary-btn" onClick={() => setActiveOverlay(null)}>
                       Close
                     </button>
-                    {progressPresentation.exportUpdate?.id ? (
+                    {canEditInitiativeDetail && progressPresentation.exportUpdate?.id ? (
                       <button
                         type="button"
                         className="secondary-btn"
@@ -1801,11 +1813,13 @@ export default function OperationalInitiativeDetailPage() {
             <div className="project-header-meta-label">Owner</div>
             <div className="project-header-meta-value">{owners.length ? owners.join(', ') : '-'}</div>
           </div>
-          <div className="project-header-meta-item">
-            <button type="button" className="secondary-btn" onClick={openOwnerEditor}>
-              Edit Owner
-            </button>
-          </div>
+          {canEditInitiativeDetail ? (
+            <div className="project-header-meta-item">
+              <button type="button" className="secondary-btn" onClick={openOwnerEditor}>
+                Edit Owner
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
     >
@@ -1941,9 +1955,11 @@ export default function OperationalInitiativeDetailPage() {
       <section className="panel">
         <div className="panel-header-row">
           <h2><Icon name="review" />Monthly Updates</h2>
-          <button type="button" className="secondary-btn" onClick={openProgressUpdate}>
-            Progress Update
-          </button>
+          {canUpdateInitiativeStatus ? (
+            <button type="button" className="secondary-btn" onClick={openProgressUpdate}>
+              Progress Update
+            </button>
+          ) : null}
         </div>
 
         <div className="table-wrap">
@@ -1995,7 +2011,7 @@ export default function OperationalInitiativeDetailPage() {
                               >
                                 View
                               </button>
-                              {update.sourceUpdate?.id ? (
+                              {canEditInitiativeDetail && update.sourceUpdate?.id ? (
                                 <button
                                   type="button"
                                   className="progress-row-actions-item"
@@ -2035,9 +2051,11 @@ export default function OperationalInitiativeDetailPage() {
           <h2><Icon name="dashboard" />Milestones</h2>
           <div className="detail-actions-row">
             <div className="muted">{milestoneRows.length} milestone(s)</div>
-            <button type="button" className="secondary-btn" onClick={openMilestoneEditor}>
-              Edit Milestones
-            </button>
+            {canEditInitiativeDetail ? (
+              <button type="button" className="secondary-btn" onClick={openMilestoneEditor}>
+                Edit Milestones
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -2070,16 +2088,18 @@ export default function OperationalInitiativeDetailPage() {
 
       <section className="panel">
         <div className="panel-header-row">
-          <h2><Icon name="risk" />ERM Risks</h2>
+          <h2><Icon name="risk" />Risks</h2>
           <div className="detail-actions-row">
             <div className="muted">{sortedInitiativeRisks.length} linked risk(s)</div>
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() => setShowRiskDrawer(true)}
-            >
-              Add New Risk
-            </button>
+            {canManageRisks ? (
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setShowRiskDrawer(true)}
+              >
+                Add New Risk
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -2142,7 +2162,7 @@ export default function OperationalInitiativeDetailPage() {
         ) : null}
       </section>
       <PmoRiskDrawer
-        isOpen={showRiskDrawer}
+        isOpen={canManageRisks && showRiskDrawer}
         onClose={() => setShowRiskDrawer(false)}
         onCreated={handleRiskCreated}
         category="Initiative"
