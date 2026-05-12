@@ -383,6 +383,7 @@ export default function PortfolioDashboardPage() {
   const [selectedOwnerStatusCell, setSelectedOwnerStatusCell] = useState(null);
   const [selectedOwnerRow, setSelectedOwnerRow] = useState(null);
   const [selectedPriorityStatusCell, setSelectedPriorityStatusCell] = useState(null);
+  const [selectedPriorityRow, setSelectedPriorityRow] = useState(null);
   const [selectedVisualType, setSelectedVisualType] = useState('initiatives');
   const majorProjects = useMemo(
     () => sortProjectsForDashboard(
@@ -588,6 +589,21 @@ export default function PortfolioDashboardPage() {
     };
   }, [businessOwnerStatusMatrix, selectedOwnerRow, selectedOwnerStatusCell, selectedVisualType]);
   const selectedPriorityStatusGroup = useMemo(() => {
+    if (selectedPriorityRow) {
+      const priorityRow = strategicPriorityStatusMatrix.find((row) => row.priority === selectedPriorityRow);
+      if (!priorityRow) return null;
+
+      const matchingProjects = sortProjectsForDashboard(priorityRow.projects);
+
+      return {
+        priority: priorityRow.priority,
+        statusKey: null,
+        label: selectedVisualType === 'major-projects' ? 'All Projects' : 'All Initiatives',
+        count: matchingProjects.length,
+        projects: matchingProjects,
+      };
+    }
+
     if (!selectedPriorityStatusCell) return null;
 
     const priorityRow = strategicPriorityStatusMatrix.find(
@@ -611,7 +627,7 @@ export default function PortfolioDashboardPage() {
       count: matchingProjects.length,
       projects: matchingProjects,
     };
-  }, [selectedPriorityStatusCell, strategicPriorityStatusMatrix]);
+  }, [selectedPriorityRow, selectedPriorityStatusCell, selectedVisualType, strategicPriorityStatusMatrix]);
   const ownerMatrixTitle = selectedVisualType === 'major-projects'
     ? 'Project Status by Business Owner'
     : 'Operational Initiative Status by Business Owner';
@@ -711,6 +727,7 @@ export default function PortfolioDashboardPage() {
                 setSelectedOwnerStatusCell(null);
                 setSelectedOwnerRow(null);
                 setSelectedPriorityStatusCell(null);
+                setSelectedPriorityRow(null);
               }}
             >
               Operational Initiatives
@@ -726,6 +743,7 @@ export default function PortfolioDashboardPage() {
                 setSelectedOwnerStatusCell(null);
                 setSelectedOwnerRow(null);
                 setSelectedPriorityStatusCell(null);
+                setSelectedPriorityRow(null);
               }}
             >
               Major Projects
@@ -755,7 +773,22 @@ export default function PortfolioDashboardPage() {
                     return (
                       <tr key={statusGroup.key}>
                         <th scope="row" className="portfolio-status-overview-label">
-                          {statusGroup.label}
+                          <button
+                            type="button"
+                            className={`owner-status-total${isSelected ? ' is-selected' : ''}`}
+                            onClick={() => {
+                              setSelectedOwnerStatusCell(null);
+                              setSelectedOwnerRow(null);
+                              setSelectedPriorityStatusCell(null);
+                              setSelectedPriorityRow(null);
+                              setSelectedStatus((current) => (
+                                current === statusGroup.key ? null : statusGroup.key
+                              ));
+                            }}
+                            aria-pressed={isSelected}
+                          >
+                            {statusGroup.label}
+                          </button>
                         </th>
                         <td className="portfolio-status-overview-count-cell">
                           <button
@@ -765,6 +798,7 @@ export default function PortfolioDashboardPage() {
                               setSelectedOwnerStatusCell(null);
                               setSelectedOwnerRow(null);
                               setSelectedPriorityStatusCell(null);
+                              setSelectedPriorityRow(null);
                               setSelectedStatus((current) => (
                                 current === statusGroup.key ? null : statusGroup.key
                               ));
@@ -810,6 +844,7 @@ export default function PortfolioDashboardPage() {
                           onClick={() => {
                             setSelectedStatus(null);
                             setSelectedPriorityStatusCell(null);
+                            setSelectedPriorityRow(null);
                             setSelectedOwnerStatusCell(null);
                             setSelectedOwnerRow((current) => (current === row.owner ? null : row.owner));
                           }}
@@ -830,6 +865,7 @@ export default function PortfolioDashboardPage() {
                               onClick={() => {
                                 setSelectedStatus(null);
                                 setSelectedPriorityStatusCell(null);
+                                setSelectedPriorityRow(null);
                                 setSelectedOwnerRow(null);
                                 setSelectedOwnerStatusCell((current) => (
                                   current?.owner === row.owner && current?.statusKey === statusConfig.key
@@ -877,7 +913,22 @@ export default function PortfolioDashboardPage() {
                 <tbody>
                   {strategicPriorityStatusMatrix.map((row) => (
                     <tr key={row.priority}>
-                      <th scope="row">{row.priority}</th>
+                      <th scope="row">
+                        <button
+                          type="button"
+                          className={`owner-status-total${selectedPriorityRow === row.priority ? ' is-selected' : ''}`}
+                          onClick={() => {
+                            setSelectedStatus(null);
+                            setSelectedOwnerRow(null);
+                            setSelectedOwnerStatusCell(null);
+                            setSelectedPriorityStatusCell(null);
+                            setSelectedPriorityRow((current) => (current === row.priority ? null : row.priority));
+                          }}
+                          aria-pressed={selectedPriorityRow === row.priority}
+                        >
+                          {row.priority}
+                        </button>
+                      </th>
                       {DELIVERY_STATUS_VISUAL_CONFIG.map((statusConfig) => {
                         const isSelected = selectedPriorityStatusGroup?.priority === row.priority
                           && selectedPriorityStatusGroup.statusKey === statusConfig.key;
@@ -891,6 +942,7 @@ export default function PortfolioDashboardPage() {
                                 setSelectedStatus(null);
                                 setSelectedOwnerRow(null);
                                 setSelectedOwnerStatusCell(null);
+                                setSelectedPriorityRow(null);
                                 setSelectedPriorityStatusCell((current) => (
                                   current?.priority === row.priority && current?.statusKey === statusConfig.key
                                     ? null

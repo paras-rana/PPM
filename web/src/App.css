@@ -1210,7 +1210,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .matrix-cell.low {
@@ -1243,7 +1243,6 @@ body {
 .matrix-cell.active {
   outline: 2px solid #2a4f9f;
   outline-offset: -2px;
-  box-shadow: 0 6px 12px rgba(78, 58, 134, 0.2);
 }
 
 /* Count matrix (dashboard) */
@@ -2137,9 +2136,6 @@ body {
 .matrix-cell.matrix-count-cell.active {
   outline: 2px solid var(--accent-strong);
   outline-offset: -2px;
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.65),
-    0 0 0 2px rgba(47, 95, 208, 0.28);
   transform: translateY(-1px);
   position: relative;
   z-index: 1;
@@ -2543,7 +2539,7 @@ body {
 .portfolio-priority-matrix-table thead th {
   top: 0;
   border-bottom: 1px solid #dfe6f5;
-  font-size: 13px;
+  font-size: 15.6px;
   font-weight: 800;
 }
 
@@ -2553,8 +2549,13 @@ body {
   min-width: 132px;
   background: linear-gradient(180deg, #f9fbff 0%, #f5f8ff 100%);
   color: #1b2f75;
-  font-size: 13px;
+  font-size: 15.6px;
   font-weight: 800;
+}
+
+.portfolio-status-overview-table thead th:nth-child(2) {
+  background: linear-gradient(180deg, #edf4ff 0%, #dceaff 100%);
+  color: #1b4f9c;
 }
 
 .portfolio-visual-selector {
@@ -2594,9 +2595,10 @@ body {
   box-shadow: 0 8px 18px rgba(33, 56, 111, 0.12);
 }
 
-.portfolio-status-overview-label,
+.portfolio-status-overview-table th[scope="row"],
 .portfolio-owner-matrix-table th[scope="row"],
 .portfolio-priority-matrix-table th[scope="row"] {
+  background: #fff;
   font-weight: 800;
   font-size: 14px;
   color: #1f2430;
@@ -2630,7 +2632,7 @@ body {
 .portfolio-status-column-label {
   font-weight: 800;
   text-align: center;
-  font-size: 14px;
+  font-size: inherit;
   vertical-align: middle;
 }
 
@@ -2673,7 +2675,6 @@ body {
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
-    box-shadow 0.2s ease,
     color 0.2s ease,
     transform 0.2s ease;
 }
@@ -2683,7 +2684,6 @@ body {
 .owner-status-total:hover,
 .owner-status-total:focus-visible {
   border-color: rgba(92, 125, 195, 0.18);
-  box-shadow: 0 10px 24px rgba(33, 56, 111, 0.12);
   transform: translateY(-1px);
 }
 
@@ -2694,7 +2694,8 @@ body {
   justify-content: flex-start;
   padding: 8px 10px;
   background: #eef3ff;
-  color: #2f4f99;
+  color: inherit;
+  font: inherit;
   text-align: left;
   white-space: normal;
 }
@@ -2702,34 +2703,29 @@ body {
 .owner-status-count.is-selected,
 .owner-status-total.is-selected {
   border-color: rgba(70, 111, 203, 0.24);
-  box-shadow: 0 12px 26px rgba(33, 56, 111, 0.16);
 }
 
 .owner-status-count.tone-red {
   border-color: #d36b77;
-  background: linear-gradient(180deg, #8e2d3f 0 4px, #ffffff 4px, #f8f3f4 100%);
+  background: #fff;
   color: #a33a48;
-  box-shadow: 0 10px 22px rgba(220, 81, 91, 0.12);
 }
 
 .owner-status-count.tone-yellow {
   border-color: #d2c44f;
-  background: linear-gradient(180deg, #8d7d00 0 4px, #ffffff 4px, #fbf9e8 100%);
+  background: #fff;
   color: #827100;
-  box-shadow: 0 10px 22px rgba(213, 165, 64, 0.12);
 }
 
 .owner-status-count.tone-green {
   border-color: #76b588;
-  background: linear-gradient(180deg, #2d6f43 0 4px, #ffffff 4px, #f3f9f4 100%);
+  background: #fff;
   color: #2e7b48;
-  box-shadow: 0 10px 22px rgba(83, 169, 101, 0.12);
 }
 
 .owner-status-count.is-empty {
   background: transparent;
   color: #8d97b6;
-  box-shadow: none;
 }
 
 .owner-status-count.is-empty.is-selected {
